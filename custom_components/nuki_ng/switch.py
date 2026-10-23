@@ -4,7 +4,7 @@ from homeassistant.helpers.entity import EntityCategory
 
 import logging
 
-from . import NukiEntity, NukiOpenerRingSuppressionEntity
+from . import NukiEntity, NukiOpenerRingSuppressionEntity, via_device_id
 from .constants import DOMAIN
 from .states import LockModes
 
@@ -89,12 +89,17 @@ class AuthEntry(NukiEntity, SwitchEntity):
 
     @property
     def device_info(self):
-        return {
+        info = {
             "identifiers": {("web_id", self.device_id)},
             "name": "Nuki Web API",
             "manufacturer": "Nuki",
-            "via_device": ("id", self.device_id)
         }
+        # Was `"via_device": ("id", self.device_id)`, deprecated in HA 2026.10 (removed in
+        # 2027.8). That tuple never matched a device (devices use (DOMAIN, id)), so the link
+        # now points at the lock/opener it was clearly meant for.
+        if via := via_device_id(self.hass, (DOMAIN, self.device_id)):
+            info["via_device_id"] = via
+        return info
 
     @property
     def entity_category(self):
